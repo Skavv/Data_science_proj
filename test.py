@@ -144,7 +144,7 @@ def defineEncoderandEval(learning_rate, keep_prob, act_func, num_hidden, batch_s
         output_2d_test = hidden_layer.eval(feed_dict={X: scaled_test_data})
     return output_2d
 
-sample_indices, df = readData("Datasets/Breast_cancer/dataR2.csv")
+sample_indices, df = readData("Dataset/2.csv")
 
 # Sample dataset
 sample_data = df.iloc[sample_indices,:]

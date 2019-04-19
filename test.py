@@ -170,4 +170,3 @@ plt.scatter(output_2d[:,0],output_2d[:,1],c=sample_data['Classification'],alpha=
 #plt.figure()
 #plt.scatter(output_2d_test[:,0],output_2d_test[:,1],c=test_data['Classification'],alpha=1)
 plt.show()
-

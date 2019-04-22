@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 DIR_NAME = 'Dataset'
+PERCENTAGE = 100
 
 def loadShuffleCSV(path):
     #-----------Load CSV and shuffle the data------------
@@ -22,6 +23,7 @@ def normalize(item):
     return max,min,item
     
 def splitTestTrain(item, NUM_ROWS, NUM_COLS):
+    item = item[:int(len(item) * (PERCENTAGE/100))]
     x_train, x_test = item[:int(0.7*len(item)),:], item[int(0.7*len(item)):,:]
     y_train = x_train[:,NUM_COLS-1:NUM_COLS]
     x_train = x_train[:,0:NUM_COLS-1]
@@ -220,7 +222,7 @@ for i in range(len(result)):
 intermediate_layer_model = []
 #---------------Defining autoencoder------------------
 #Each dataset has a different autoencoder
-from keras.layers import Input, Dense, Conv2D, Flatten, Activation
+from keras.layers import Input, Dense, Conv1D, Flatten, Activation
 from keras.models import Model
 from keras.optimizers import SGD, RMSprop
 from keras.layers.pooling import MaxPool2D
@@ -232,7 +234,7 @@ for k in range(len(result)):
     NUM_ROWS = len(x_train[k])
     NUM_COLS = len(x_train[k][0])
     inputs = Input(shape=(NUM_COLS, ))
-    es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=10)
+    mc = ModelCheckpoint('autoenc_' + str(k) + '.h5', monitor='val_acc', mode='max', verbose=1, save_best_only=True)
     if k==0:#Breast cancer dataset
         h1 = Dense(128, activation='relu')(inputs)
         h = Dense(64, activation='sigmoid')(h1)
@@ -244,21 +246,23 @@ for k in range(len(result)):
             batch_size=5,
             epochs=50,
             validation_data=(x_test[k], x_test[k]),
-            callbacks=[es])
+            callbacks=[mc])
         intermediate_layer_model.append(Model(inputs=model.input,
                                  outputs=model.output))
     elif k==1:#Dermatology dataset
-        h1 = Dense(128, activation='relu')(inputs)
-        h2 = Dense(64, activation='softplus')(h1)
-        outputs = Dense(NUM_COLS)(h2)
+        h1 = Dense(20, activation='relu')(inputs)
+        h2 = Dense(100, activation='relu')(h1)
+        h3 = Dense(20, activation='sigmoid')(h2)
+        #outputs = Dense(NUM_COLS)(h3)
+        outputs = Dense(NUM_COLS)(h3)
         model = Model(input=inputs, output=outputs)
         print("Dermatology dataset")
         model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
         model.fit(x_train[k], x_train[k],
-            batch_size=10,
+            batch_size=15,
             epochs=500,
             validation_data=(x_test[k], x_test[k]),
-            callbacks=[es])
+            callbacks=[mc])
         intermediate_layer_model.append(Model(inputs=model.input,
                                  outputs=model.output))
     elif k==2:#audit_risk dataset
@@ -268,12 +272,11 @@ for k in range(len(result)):
         model = Model(input=inputs, output=outputs)
         print("Audit risk dataset")
         model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
-        print(x_train[k][0])
         model.fit(x_train[k], x_train[k],
             batch_size=10,
             epochs=500,
             validation_data=(x_test[k], x_test[k]),
-            callbacks=[es])
+            callbacks=[mc])
         intermediate_layer_model.append(Model(inputs=model.input,
                                  outputs=model.output))
 

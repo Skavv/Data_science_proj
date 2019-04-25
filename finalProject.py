@@ -12,8 +12,8 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.optimizers import SGD, RMSprop
 from sklearn import metrics
 
-DIR_NAME = 'Dataset'
-PERCENTAGE = 100
+DIR_NAME = 'Dataset'#Folder name in which the datasets are located
+PERCENTAGE = 100#Percentage of the data to be used
 
 def loadShuffleCSV(path):
     #-----------Load CSV and shuffle the data------------
@@ -113,8 +113,6 @@ def splitTestTrain(item, NUM_ROWS, NUM_COLS, i):
     unique, counts = np.unique(item[:,len(item[0])-1], return_counts=True)
     x_train, x_test = item[:int(0.7*len(item)),:], item[int(0.7*len(item)):,:]
     initial = counts[0]/counts[1]
-    print(initial)
-    print(i)
     #Making sure the datasets are equally splitted to training and test data
     #according to the initial dataset
     if i==0 or i==2:#Breast cancer dataset and audit dataset
@@ -153,7 +151,6 @@ def trainNN(name, autoenc_output_xtrain, ytrain, autoenc_output_xtest, ytest, NU
     #Wait 100 epochs for validation loss to improve, saving the best model
     es = EarlyStopping(monitor='val_acc', mode='max', verbose=1, patience=100)
     mc = ModelCheckpoint(r'./NN_weights/'+str(name) + '.h5', monitor='val_acc', mode='max', verbose=1, save_best_only=True)
-    
     if name==0:#Breast cancer dataset
         visible = Input(shape=(NUM_COLS,))
         hidden1 = Dense(4, activation='relu')(visible)
@@ -172,7 +169,6 @@ def trainNN(name, autoenc_output_xtrain, ytrain, autoenc_output_xtest, ytest, NU
                 pred[i] = 1
             elif pred[i]<=0.5:
                 pred[i] = 0
-        print("Accuracy", metrics.accuracy_score(y_test[name], pred))
     elif name==1:#Dermatology dataset
         visible = Input(shape=(NUM_COLS,))
         hidden1 = Dense(16, activation='relu')(visible)
@@ -183,7 +179,7 @@ def trainNN(name, autoenc_output_xtrain, ytrain, autoenc_output_xtest, ytest, NU
                 batch_size=15,
                 epochs=500,
                 validation_data=(autoenc_output_xtest[name], ytest[name]),
-                callbacks=[es, mc])
+                callbacks=[es, mc])   
     elif name==2:#Audit dataset
         visible = Input(shape=(NUM_COLS,))
         hidden1 = Dense(NUM_COLS-1, activation='relu')(visible)
@@ -203,7 +199,6 @@ class AutoEncoder:
     def __init__(self, encoding_dim, arr):
         self.encoding_dim = encoding_dim
         self.x = np.array(arr)
-        print(self.x)
 
     def _encoder(self):
         inputs = Input(shape=(self.x[0].shape))
@@ -242,8 +237,6 @@ class AutoEncoder:
             os.mkdir(r'./weights')
         else:
             self.encoder.save(r'./weights/encoder_weights'+str(i)+'.h5')
-            self.decoder.save(r'./weights/decoder_weights'+str(i)+'.h5')
-            self.model.save(r'./weights/ae_weights'+str(i)+'.h5')
 
 if __name__ == '__main__':
     #-----------Open every CSV file in the folder-----------
@@ -300,13 +293,13 @@ if __name__ == '__main__':
             ae = AutoEncoder(encoding_dim=5, arr=x_train[i])
             ae.encoder_decoder(col=len(x_train[i][0]))
             ae.fit(batch_size=10, epochs=500)
-            ae.save(i=i)    
+            ae.save(i=i)        
         elif i==1:#Dermatology dataset
             ae = AutoEncoder(encoding_dim=17, arr=x_train[i])
             ae.encoder_decoder(col=len(x_train[i][0]))
             ae.fit(batch_size=20, epochs=500)
             ae.save(i=i)
-        elif i==2:#Audit dataset
+        if i==2:#Audit dataset
             ae = AutoEncoder(encoding_dim=12, arr=x_train[i])
             ae.encoder_decoder(col=len(x_train[i][0]))
             ae.fit(batch_size=50, epochs=500)
@@ -321,7 +314,6 @@ if __name__ == '__main__':
     reduced_Arr_x_test = []
     for i in range(len(x_train)):
         encoder = load_model(r'./weights/encoder_weights'+str(i)+'.h5')
-        decoder = load_model(r'./weights/decoder_weights'+str(i)+'.h5')
         tmp = encoder.predict(x_train[i])
         tmp2 = encoder.predict(x_test[i])
         reduced_Arr_x_train.append(tmp)
@@ -335,7 +327,6 @@ if __name__ == '__main__':
         trainNN(i, reduced_Arr_x_train, y_train, reduced_Arr_x_test, y_test, NUM_ROWS, NUM_COLS)
         maxTmp = np.array(maxTmp)
         minTmp = np.array(minTmp)
-        print(maxTmp.shape)
     #----------------------------------------------------------------
 
     #Train 3 separate neural networks to compare the accuracy scores-----------------------------------
@@ -353,7 +344,6 @@ if __name__ == '__main__':
                 epochs=500,
                 validation_data=(x_test[0], y_test[0]),
                 callbacks=[es, mc])
-    
     #Dermatology dataset
     mc = ModelCheckpoint(r'./notReducedNN_weights/'+str(1) + '.h5', monitor='val_acc', mode='max', verbose=1, save_best_only=True)
     visible = Input(shape=(len(result[1][0])-1,))
@@ -366,7 +356,6 @@ if __name__ == '__main__':
                 epochs=500,
                 validation_data=(x_test[1], y_test[1]),
                 callbacks=[es, mc])
-
     #Audit dataset
     mc = ModelCheckpoint(r'./notReducedNN_weights/'+str(2) + '.h5', monitor='val_acc', mode='max', verbose=1, save_best_only=True)
     visible = Input(shape=(len(result[2][0])-1,))
@@ -382,7 +371,9 @@ if __name__ == '__main__':
                 validation_data=(x_test[2], y_test[2]),
                 callbacks=[es, mc])
     #---------------------------------------------------------------------------------------------------
-
+    
+    #Code to visualize an encoded and decoded entry of--------------------------------------------------
+    #the breast cancer dataset--------------------------------------------------------------------------
     '''
     encoder = load_model(r'./weights/encoder_weights0.h5')
     decoder = load_model(r'./weights/decoder_weights0.h5')
@@ -394,3 +385,4 @@ if __name__ == '__main__':
     print('Encoded: {}'.format(x))
     print('Decoded: {}'.format(y))
     '''
+    #-----------------------------------------------------------------------------------------------------
